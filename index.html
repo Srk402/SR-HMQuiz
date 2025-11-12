@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Website</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <style>
+        * { box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+        body {
+            background:linear-gradient(135deg,#1e3c72,#2a5298);
+            min-height:100vh;
+            display:flex; justify-content:center; align-items:center; padding:16px; color:#fff;
+        }
+        #container {
+            background:rgba(255,255,255,0.1);
+            border-radius:20px;
+            width:380px; max-width:97vw;
+            box-shadow:0 8px 32px rgba(0,0,0,0.28);
+            padding:18px 20px 18px 20px;
+            position:relative;
+        }
+        .fixed-top-bar {
+            position:absolute; top:12px; left:0; width:100%; height:48px; pointer-events:none;
+        }
+        #top-arrow {
+            position:absolute; top:12px; left:18px;
+            background:rgba(30, 60, 114, 0.4); border:none;
+            border-radius:50%; width:39px; height:39px; font-size:1.73em;
+            color:#ffd700; z-index:10; cursor:pointer; pointer-events:auto;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 2px 7px #23232344;
+        }
+        #history-btn {
+            position:absolute; top:12px; right:18px;
+            background:rgba(30, 60, 114, 0.4); border:none;
+            border-radius:50%; width:39px; height:39px; font-size:1.55em;
+            color:#ffd700; z-index:10; cursor:pointer; pointer-events:auto;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 2px 7px #23232344;
+        }
+        h1,h2 { text-align:center; margin-bottom:18px; text-shadow:0 2px 7px rgba(0,0,0,0.32);}
+        #user-form label { display:block; margin-bottom:7px; font-weight:600;}
+        input[type="text"],select {
+            width:100%; padding:10px; border-radius:8px; border:none;
+            margin-bottom:18px; font-size:1rem; box-shadow:inset 2px 2px 8px #141c2e38;
+        }
+        input[type="text"]:focus, select:focus { outline:none; box-shadow:0 0 6px 3px #60eef3;}
+        button:not([id^=top]) {
+            width:100%; padding:13px; font-size:1.1rem; border:none; border-radius:32px;
+            background:#56ccf2; color:#00334e; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgb(86 204 242 / 0.18);
+        }
+        button:not([id^=top]):hover { background:#1e81cb; color:#fff;}
+        
+        /* Quiz Window */
+        #quiz-window { display:none; text-align:center;}
+        .quiz-card {
+            background:rgba(255,255,255,0.13); border-radius:14px;
+            padding:29px 8px 16px 8px; box-shadow:0 4px 18px rgba(0,0,0,0.11);
+            margin-top:20px;
+        }
+        .timer-bar {
+            display:flex; flex-direction:column; align-items:center; margin-bottom:15px;
+            position:relative;
+        }
+        .timer-box {
+            display:flex; align-items:center; justify-content:center;
+            background:rgba(255,255,255,0.07); border-radius:22px;
+            margin-bottom:7px;
+            min-width:120px;
+            font-size:1.18rem; font-weight:800; color:#ffd700; padding:6px 0 6px 0;
+            box-shadow:0 2px 8px #ffd70031;
+        }
+        .timer-ic {font-size:1.14em; margin-right:9px;}
+        .timer-underline {
+            display:block; height:5px; width:72%; margin:0 auto; border-radius:50px; background:linear-gradient(90deg,#ffd700,#56ccf2,#ffd700); margin-top:4px; opacity:0.7;
+        }
+        #question-count { font-weight:600; font-size:1.08rem; margin-bottom:16px;}
+        .question { font-size:1.18rem; font-weight:600; margin-bottom:22px; color:#fff; }
+        .options { list-style:none; padding:0; margin-bottom:17px;}
+        .options li {
+            margin-bottom:15px; background:rgba(255,255,255,0.18);
+            padding:12px 15px; border-radius:10px; cursor:pointer; font-weight:600;
+            user-select:none; transition:background 0.23s;
+        }
+        .options li:hover { background: #89cdf5; }
+        .options li.selected { background:#2a65f5; color:#fff; }
+        #nextBtn { width:100%; margin-top:10px;}
+        #result-window { display:none; text-align:center;}
+        .result-card {
+            background:rgba(255,255,255,0.13);
+            margin:27px auto 0 auto; padding:28px 10px 16px 10px;
+            border-radius:15px; box-shadow:0 8px 18px rgba(0,0,0,0.11);
+            text-align:center;
+        }
+        .result-heading {
+            font-size:1.45rem; margin-bottom:14px; font-weight:800; color:#ffd700;
+            letter-spacing:0.5px; text-shadow:0 1px 8px #ffd7003a;
+        }
+        .badge { display:inline-block; font-size:1.07em; background:#60eef3; color:#152534; padding:4px 12px; border-radius:18px; margin-bottom:9px;}
+        .result-stats { font-size:1.07rem; text-align:left; margin-bottom:11px;}
+        .result-stats p { margin:7px 0; }
+        .result-icon { font-size:1.16em; margin-right:7px;}
+        .action-buttons { margin-top:14px; display:flex; flex-wrap:wrap; gap:14px; justify-content:center;}
+        .action-buttons button {
+            background:#ffd700; color:#00334e; border-radius:11px;
+            padding:10px 13px; font-weight:700;
+            font-size:1em; width:auto; box-shadow:0 2px 10px #ffd7004c;
+        }
+        .action-buttons button:hover { background:#faae00;}
+        #history-dropdown {
+            display:none; position:fixed; top:65px; right:1vw;
+            background:rgba(18,18,25,0.92); border-radius:17px;
+            width:96vw; max-width:295px; max-height:265px; overflow-y:auto;
+            box-shadow:0 0 18px #ffd700bd; padding:15px; z-index:99;
+        }
+        #history-dropdown h3 { margin-bottom:10px; text-align:center; color:#ffd700; font-size:1.13em;}
+        .history-item {
+            display:flex; justify-content:space-between; align-items:center;
+            background:#232323a1; margin-bottom:8px; border-radius:8px; padding:8px 12px; font-size:0.97rem;
+        }
+        .history-item>.subject { max-width:130px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+        .history-item button { background:#ffd700; border:none; padding:5px 10px; border-radius:10px; color:#333; font-weight:700; cursor:pointer;}
+        .history-item button:hover { background:#faae00;}
+        @media screen and (max-width:500px) { #container{width:99vw; padding:7px 2vw;} }
+    </style>
+</head>
+<body>
+<div id="container">
+    <!-- Always visible top bar with arrow and history button -->
+    <div class="fixed-top-bar">
+        <button id="top-arrow" title="Back">&#8592;</button>
+        <button id="history-btn" title="Quiz History">&#8942;</button>
+    </div>
+    <div id="user-form">
+        <h1>Start <span style="color:#ffd700;">&#x1F4DD;</span> Your Quiz</h1>
+        <label for="userName">Name:</label>
+        <input type="text" id="userName" placeholder="Enter your name" required>
+        <label for="userClass">Class:</label>
+        <select id="userClass">
+            <option value="">Select Class</option>
+            <option value="10th">10th</option>
+            <option value="12th">12th</option>
+        </select>
+        <label for="userSubject">Subject:</label>
+        <select id="userSubject" disabled>
+            <option value="">Select Subject</option>
+        </select>
+        <button id="startQuizBtn">Start Quiz</button>
+    </div>
+
+    <div id="quiz-window">
+        <div class="quiz-card">
+            <div class="timer-bar">
+                <div class="timer-box">
+                    <span class="timer-ic">&#x23F1;</span>
+                    <span id="timer"></span>
+                </div>
+                <span class="timer-underline"></span>
+            </div>
+            <div id="question-count"></div>
+            <div class="question"></div>
+            <ul class="options"></ul>
+            <button id="nextBtn" disabled>Next Question</button>
+        </div>
+    </div>
+
+    <div id="result-window">
+        <div class="result-card">
+            <div class="result-heading">Quiz Result 📊</div>
+            <div class="badge" id="result-badge"></div>
+            <div class="result-stats">
+                <p><span class="result-icon">👤</span> Name: <span id="resultName"></span></p>
+                <p><span class="result-icon">🏫</span> Class: <span id="resultClass"></span></p>
+                <p><span class="result-icon">📚</span> Subject: <span id="resultSubject"></span></p>
+                <p><span class="result-icon">✔️</span> Correct Answers: <span id="correctCount"></span></p>
+                <p><span class="result-icon">❌</span> Wrong Answers: <span id="wrongCount"></span></p>
+                <p><span class="result-icon">⏸️</span> Skipped Questions: <span id="skippedCount"></span></p>
+                <p><span class="result-icon">⭐</span> Total Marks: <span id="totalMarks"></span></p>
+                <p><span class="result-icon">🎯</span> Percentage: <span id="percentage"></span>%</p>
+            </div>
+            <div class="action-buttons">
+                <button id="shareResult">Share Result</button>
+                <button id="printResult">Print Result</button>
+                <button id="downloadResult">Download Result</button>
+                <button id="restartQuiz">Take Quiz Again</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-dropdown">
+        <h3>Quiz History</h3>
+        <div id="history-items"></div>
+    </div>
+</div>
+
+<script>
+const subjectsByClass = {
+    "10th": ["Science","Social Science (SST)","Drawing","Hindi"],
+    "12th":["Physics","Chemistry","Biology","Hindi"]
+};
+const questionBank = {
+    "Science":[
+        {q:"The earth revolves around?",options:["Sun","Moon","Mars","Venus"], answerIndex: 0},
+        {q:"Water boils at?",options:["100°C","90°C","50°C","75°C"], answerIndex: 0}
+    ],
+    "Social Science (SST)":[
+        {q:"Who was India's 1st PM?",options:["Jawaharlal Nehru","Mahatma Gandhi","Indira Gandhi","Rajiv Gandhi"], answerIndex: 0},
+        {q:"India gained independence in?",options:["1947","1950","1935","1942"], answerIndex: 0}
+    ],
+    "Drawing":[
+        {q:"Primary color?",options:["Red","Green","Orange","Purple"], answerIndex: 0},
+        {q:"Sides of triangle?",options:["3","4","5","6"], answerIndex: 0}
+    ],
+    "Hindi":[
+        {q:"खड़ीबोली’ का प्रथम महाकाव्य है '?",options:["वैदेही वनवास","प्रियप्रवास","साकेत","कामायनी"], answerIndex: 1},
+        {q:"हरिऔध’ का जन्म-स्थान है ?",options:["एबटाबाद","निजामाबाद","काशी","फर्रूखाबाद"], answerIndex: 1},
+        {q:"ध्रुवस्वामिनी की गद्य-विधा है'?",options:["उपन्यास","कहानी","नाटक","जीवनी"], answerIndex: 2},
+        {q:"आवारा मसीहा जीवनी-कृति के लेखक हैं?",options:["अमृत राय","राहुल सांकृत्यायन","वासुदेवशरण अग्रवाल"," विष्णु प्रभाकर"], answerIndex: 3},
+        {q:"अमीर खुसरो’ कवि हैं?",options:["आदिकाल के","भक्तिकाल के","रीतिकाल के","आधुनिककाल के"], answerIndex: 0},
+        {q:"कौन-सी रचना वीरगाथात्मक नहीं है?",options:["परमाल रासो","विद्यापति-पदावली","पृथ्वीराज रासो","बीसलदेव रासो"], answerIndex: 1},
+        {q:"जायसी का ‘पद्मावत’ किस भाषा में लिखा गया है?'?",options:["ब्रजभाषा","अवधी","खड़ीबोली","फारसी"], answerIndex: 1},
+        {q:"कौन-सा कवि ज्ञानाश्रयी शाखा से सम्बन्धित नहीं है?",options:["कबीर","नानक","रैदास","कुतुबन व जायसी"], answerIndex: 3},
+        {q:"गोस्वामी तुलसीदास के बचपन का नाम था'?",options:["तुकाराम","आत्माराम","सीताराम","रामबोला"], answerIndex: 3},
+        {q:" “रुनकता’ नामक स्थान सम्बन्धित है ?",options:["जयशंकर प्रसाद","सूर्यकान्त त्रिपाठी ‘निराला","कबीर","सूरदास"], answerIndex: 3},
+        {q:"इनमें से हिन्दी का प्राचीनतम (प्रथम) महाकाव्य कौन-सा है '?",options:["श्रीरामचरितमानस","पद्मावत","पृथ्वीराज रासो","प्रियप्रवास"], answerIndex: 2},
+        {q:"वीर रस’ की कृति है ?",options:["बिहारी सतसई","सूरसागर","शिवाबावनी","प्रियप्रवास"], answerIndex: 2},
+        {q:"जैनेन्द्रकुमार की रचना है ?",options:["वातायन","बाजे पायलिया के घुँघरू","मातृभूमि","साहित्य सहचर"], answerIndex: 0},
+        {q:"निम्नलिखित में से प्रगतिवादी कवि नहीं हैं ?",options:["त्रिलोचन शास्त्री","नागार्जुन","केदारनाथ अग्रवाल","गिरिजाकुमार माथुर"], answerIndex: 3},
+        {q:"धर्मवीर भारती की रचना नहीं है ?",options:["कनुप्रिया","बंद गली का आखिरी मकान","धूप के धान","सूरज का सातवाँ घोड़ा"], answerIndex: 1},
+        {q:"तिब्बत यात्रा किस विधा की रचना है?",options:["संस्मरण","रेखाचित्र","यात्रावृत्त","आत्मकथा"], answerIndex: 2},
+        {q:"लवंगलता के लेखक हैं?",options:["बालकृष्ण भट्ट","किशोरीलाल गोस्वामी","अमृतलाल नागर","भगवतीचरण वर्मा"], answerIndex: 1},
+        {q:"राहुल सांकृत्यायन की रचना है?",options:["अथातो घुमक्कड़ जिज्ञासा","काठ का सपना","संयोगिता स्वयंवर","मुक्ति पथ"], answerIndex: 0},
+        {q:"जयचन्द प्रकाश के रचनाकार हैं ?",options:["चन्दबरदाई","नरपति नाल्ह","भट्ट केदार","विद्यापति"], answerIndex: 1},
+        {q:"भक्तिकाल का महाकाव्य है?",options:["पृथ्वीराज रासो","पद्मावत","साकेत","कामायनी"], answerIndex: 0},
+        {q:"वेदना की प्रतिमूर्ति की कवयित्री हैं ?",options:["महादेवी वर्मा","मैत्रेयी पुष्पा","सुभद्राकुमारी चौहान","सुमन राजे"], answerIndex: 0}
+    ],
+    "Physics":[
+        {q:"Unit of force?",options:["Newton","Joule","Pascal","Watt"], answerIndex: 0},
+        {q:"Light speed?",options:["3x10^8 m/s","3x10^6 m/s","3x10^4 m/s","3x10^2 m/s"], answerIndex: 0}
+    ],
+    "Chemistry":[
+        {q:"Water is made of?",options:["H2O","CO2","O2","H2"], answerIndex: 0},
+        {q:"pH of neutral?",options:["7","1","14","0"], answerIndex: 0}
+    ],
+    "Biology":[
+        {q:"Powerhouse of cell?",options:["Mitochondria","Nucleus","Ribosome","Chloroplast"], answerIndex: 0},
+        {q:"Blood pumped by?",options:["Heart","Lungs","Kidneys","Liver"], answerIndex: 0}
+    ]
+};
+const LS_KEY_HISTORY = "quizHistoryData";
+const userNameInput = document.getElementById('userName');
+const userClassSelect = document.getElementById('userClass');
+const userSubjectSelect = document.getElementById('userSubject');
+const startQuizBtn = document.getElementById('startQuizBtn');
+const quizWindow = document.getElementById('quiz-window');
+const questionCount = document.getElementById('question-count');
+const timerEl = document.getElementById('timer');
+const questionEl = quizWindow.querySelector('.question');
+const optionsList = quizWindow.querySelector('.options');
+const nextBtn = document.getElementById('nextBtn');
+const resultWindow = document.getElementById('result-window');
+const resultName = document.getElementById('resultName');
+const resultClass = document.getElementById('resultClass');
+const resultSubject = document.getElementById('resultSubject');
+const correctCountEl = document.getElementById('correctCount');
+const wrongCountEl = document.getElementById('wrongCount');
+const skippedCountEl = document.getElementById('skippedCount');
+const totalMarksEl = document.getElementById('totalMarks');
+const percentageEl = document.getElementById('percentage');
+const shareResultBtn = document.getElementById('shareResult');
+const printResultBtn = document.getElementById('printResult');
+const downloadResultBtn = document.getElementById('downloadResult');
+const restartQuizBtn = document.getElementById('restartQuiz');
+const historyBtn = document.getElementById('history-btn');
+const topArrowBtn = document.getElementById('top-arrow');
+const historyDropdown = document.getElementById('history-dropdown');
+const historyItems = document.getElementById('history-items');
+const resultBadge = document.getElementById('result-badge');
+
+let currentQuestionIndex = 0;
+let selectedAnswers = [];
+let quizQuestions = [];
+let timerInterval = null;
+let timeRemaining = 600;
+
+// Subject dropdown changes
+userClassSelect.addEventListener('change', () => {
+    userSubjectSelect.innerHTML = '<option value="">Select Subject</option>';
+    if (userClassSelect.value) {
+        subjectsByClass[userClassSelect.value].forEach(subject => {
+            let option = document.createElement('option');
+            option.value = subject; option.textContent = subject;
+            userSubjectSelect.appendChild(option);
+        });
+        userSubjectSelect.disabled = false;
+    } else { userSubjectSelect.disabled = true; }
+});
+
+startQuizBtn.addEventListener('click', () => {
+    const userName = userNameInput.value.trim(),
+        userClass = userClassSelect.value,
+        userSubject = userSubjectSelect.value;
+    if (!userName) {alert('Please enter your name');return;}
+    if (!userClass) {alert('Please select your class');return;}
+    if (!userSubject) {alert('Please select your subject');return;}
+    quizQuestions = getRandomQuestions(userSubject, 20);
+    selectedAnswers = new Array(quizQuestions.length).fill(null);
+    currentQuestionIndex = 0; timeRemaining = 600;
+    document.getElementById('user-form').style.display = 'none';
+    quizWindow.style.display = 'block'; resultWindow.style.display = 'none'; historyDropdown.style.display = 'none';
+    showQuestion(currentQuestionIndex); startTimer();
+    window.scrollTo(0, 0);
+});
+
+// Back (arrow) button logic
+topArrowBtn.addEventListener('click', () => {
+    historyDropdown.style.display='none';
+    if(quizWindow.style.display==="block" || resultWindow.style.display==="block") {
+        quizWindow.style.display='none'; resultWindow.style.display='none'; document.getElementById('user-form').style.display='block';
+        clearInterval(timerInterval);
+    }
+});
+
+// history menu button
+historyBtn.addEventListener('click',()=>{
+    if(historyDropdown.style.display==='block'){ historyDropdown.style.display='none'; }
+    else{ loadHistory(); historyDropdown.style.display='block'; }
+});
+
+function getRandomQuestions(subject,count){
+    if(!questionBank[subject])return [];
+    const pool = questionBank[subject];
+    const shuffled = pool.slice().sort(()=>0.5-Math.random());
+    return shuffled.slice(0,Math.min(count,pool.length));
+}
+
+function showQuestion(index){
+    timerEl.textContent = formatTime(timeRemaining);
+    questionCount.textContent = `Question ${index+1} of ${quizQuestions.length}`;
+    questionEl.textContent = quizQuestions[index]?.q||'';
+    optionsList.innerHTML = '';
+    (quizQuestions[index]?.options||[]).forEach((opt,i)=>{
+        const li=document.createElement('li');
+        li.textContent=opt;
+        li.addEventListener('click', ()=>selectOption(i));
+        if(selectedAnswers[index]===i){li.classList.add('selected');}
+        optionsList.appendChild(li);
+    });
+    nextBtn.disabled = selectedAnswers[index]==null;
+}
+function formatTime(s){const m=Math.floor(s/60).toString().padStart(2,'0'),sec=(s%60).toString().padStart(2,'0');return `${m}:${sec}`;}
+function selectOption(optionIndex){selectedAnswers[currentQuestionIndex]=optionIndex;showQuestion(currentQuestionIndex);nextBtn.disabled=false;}
+nextBtn.addEventListener('click', ()=>{
+    if(currentQuestionIndex < quizQuestions.length-1){
+        currentQuestionIndex++; 
+        showQuestion(currentQuestionIndex);
+    } else {
+        submitQuiz();
+    }
+});
+function startTimer(){
+    updateTimerDisplay();
+    timerInterval=setInterval(()=>{
+        timeRemaining--;
+        if(timeRemaining<=0){ clearInterval(timerInterval); alert('Time is up! Submitting quiz.'); submitQuiz();}
+        else{ updateTimerDisplay();}
+    },1000);
+}
+function updateTimerDisplay(){ timerEl.textContent = formatTime(timeRemaining);}
+function submitQuiz(){
+    clearInterval(timerInterval);
+    let correct=0, wrong=0, skipped=0;
+    selectedAnswers.forEach((ans, i)=>{
+        if(ans == null){
+            skipped++;
+        } else if(ans === quizQuestions[i].answerIndex){
+            correct++;
+        } else {
+            wrong++;
+        }
+    });
+    let total = correct;
+    let percent = ((total / quizQuestions.length) * 100).toFixed(2);
+
+    resultName.textContent = userNameInput.value.trim();
+    resultClass.textContent = userClassSelect.value;
+    resultSubject.textContent = userSubjectSelect.value;
+    correctCountEl.textContent = correct;
+    wrongCountEl.textContent = wrong;
+    skippedCountEl.textContent = skipped;
+    totalMarksEl.textContent = total;
+    percentageEl.textContent = percent;
+    resultBadge.innerHTML = percent >= 90 ? '🥇 Legend' : percent >= 75 ? '🥈 Distinction' : percent >= 50 ? '🥉 Good' : '👍 Try Again';
+
+    quizWindow.style.display = 'none';
+    resultWindow.style.display = 'block';
+
+    saveHistory({
+        date: new Date().toISOString(),
+        name: userNameInput.value.trim(),
+        class: userClassSelect.value,
+        subject: userSubjectSelect.value,
+        correct, wrong, skipped, total, percent
+    });
+}
+
+function saveHistory(record){
+    let history=JSON.parse(localStorage.getItem(LS_KEY_HISTORY))||[];
+    history.push(record);
+    localStorage.setItem(LS_KEY_HISTORY,JSON.stringify(history));
+}
+
+// WhatsApp Sharing
+shareResultBtn.addEventListener('click',()=>{
+    const text = `*Quiz Result*%0AName: ${resultName.textContent}%0AClass: ${resultClass.textContent}%0ASubject: ${resultSubject.textContent}%0ACorrect: ${correctCountEl.textContent}%0AWrong: ${wrongCountEl.textContent}%0ASkipped: ${skippedCountEl.textContent}%0AMarks: ${totalMarksEl.textContent}%0APercentage: ${percentageEl.textContent}%25`;
+    const url = 'https://wa.me/?text='+text;
+    window.open(url, '_blank');
+});
+// Print
+printResultBtn.addEventListener('click',()=>{
+    let printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write('<html><head><title>Quiz Result</title><style>body{font-family:sans-serif; background:#f1f1f1;}.result-card{background:#fff;padding:28px;margin:40px auto;max-width:420px;border-radius:10px;box-shadow:0 6px 18px #aaa;}p{font-size:1.03em;}h2{font-size:1.29em;}@media print{body{background:#fff;}}</style></head><body>');
+    printWindow.document.write('<div class="result-card"><h2>Quiz Result</h2>');
+    printWindow.document.write(`<p>Name: ${resultName.textContent}<br>Class: ${resultClass.textContent}<br>Subject: ${resultSubject.textContent}</p>`);
+    printWindow.document.write(`<p>Correct: ${correctCountEl.textContent}<br>Wrong: ${wrongCountEl.textContent}<br>Skipped: ${skippedCountEl.textContent}<br>Marks: ${totalMarksEl.textContent}<br>Percentage: ${percentageEl.textContent}%</p>`);
+    printWindow.document.write('</div></body></html>');
+    printWindow.document.close();
+    printWindow.print();
+});
+// Download 
+downloadResultBtn.addEventListener('click',()=>{
+    const content = `Quiz Result
+Name: ${resultName.textContent}
+Class: ${resultClass.textContent}
+Subject: ${resultSubject.textContent}
+Correct Answers: ${correctCountEl.textContent}
+Wrong Answers: ${wrongCountEl.textContent}
+Skipped Questions: ${skippedCountEl.textContent}
+Marks: ${totalMarksEl.textContent}
+Percentage: ${percentageEl.textContent}%`;
+    const blob=new Blob([content],{type:'text/plain'});
+    if(window.navigator.msSaveOrOpenBlob){
+        window.navigator.msSaveOrOpenBlob(blob,"quiz_result.txt");
+    }else{
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download='quiz_result.txt';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},0);
+    }
+});
+// Restart quiz
+restartQuizBtn.addEventListener('click',()=>{
+    resultWindow.style.display='none'; quizWindow.style.display='none'; document.getElementById('user-form').style.display='block';
+});
+
+// History logic
+function loadHistory(){
+    historyItems.innerHTML='';
+    const history=JSON.parse(localStorage.getItem(LS_KEY_HISTORY))||[];
+    if(history.length===0){
+        historyItems.innerHTML='<p style="text-align:center; color:#ddd;">No history found</p>';
+        return;
+    }
+    history.forEach((record,index)=>{
+        const div=document.createElement('div');
+        div.classList.add('history-item');
+        div.innerHTML=`<span class='subject'>${record.subject}</span>
+                         <button data-index='${index}'>View Result</button>`;
+        historyItems.appendChild(div);
+    });
+    historyItems.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click',e=>{
+            const i=parseInt(e.target.dataset.index);
+            showHistoryResult(i);
+        });
+    });
+}
+
+function showHistoryResult(index){
+    const history=JSON.parse(localStorage.getItem(LS_KEY_HISTORY))||[];
+    const record=history[index];
+    if(record){
+        resultName.textContent=record.name;
+        resultClass.textContent=record.class;
+        resultSubject.textContent=record.subject;
+        correctCountEl.textContent=record.correct;
+        wrongCountEl.textContent=record.wrong;
+        skippedCountEl.textContent=record.skipped;
+        totalMarksEl.textContent=record.total;
+        percentageEl.textContent=record.percent;
+        resultBadge.innerHTML = record.percent >= 90 ? '🥇 Legend' : record.percent >= 75 ? '🥈 Distinction' : record.percent >= 50 ? '🥉 Good' : '👍 Try Again';
+        resultWindow.style.display='block';
+        quizWindow.style.display='none';
+        document.getElementById('user-form').style.display='none';
+        historyDropdown.style.display='none';
+    }
+}
+</script>
+</body>
+</html>
